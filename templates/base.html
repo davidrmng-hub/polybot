@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PolyBot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0d10; --panel:#13161b; --borde:#22262e; --texto:#e8eaed; --tenue:#8b919c;
+    --verde:#3ddc84; --rojo:#ff5c5c; --acento:#7c8cff; --amarillo:#f5c451;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--texto);font-family:'Space Grotesk',system-ui,sans-serif;font-size:15px}
+  .mono{font-family:'JetBrains Mono',monospace}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--borde);position:sticky;top:0;background:var(--bg);z-index:5}
+  .logo{font-weight:700;letter-spacing:.5px}
+  .logo span{color:var(--acento)}
+  .sim{font-size:11px;color:var(--amarillo);border:1px solid var(--amarillo);border-radius:20px;padding:2px 8px;margin-left:8px}
+  nav a{color:var(--tenue);text-decoration:none;margin-left:14px;font-size:14px}
+  nav a.activo{color:var(--texto)}
+  main{max-width:1000px;margin:0 auto;padding:16px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .card{background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:14px}
+  .etq{color:var(--tenue);font-size:12px;text-transform:uppercase;letter-spacing:.8px}
+  .num{font-size:24px;font-weight:600;margin-top:6px}
+  .pos{color:var(--verde)} .neg{color:var(--rojo)}
+  h2{font-size:16px;margin:26px 0 10px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{color:var(--tenue);font-weight:500;text-align:left;padding:8px 6px;border-bottom:1px solid var(--borde)}
+  td{padding:8px 6px;border-bottom:1px solid var(--borde);vertical-align:top}
+  .tabla{overflow-x:auto}
+  a.q{color:var(--texto);text-decoration:none} a.q:hover{color:var(--acento)}
+  .chip{display:inline-block;font-size:11px;padding:2px 7px;border-radius:6px;background:#1d2129}
+  .chip.si{color:var(--verde)} .chip.no{color:var(--rojo)}
+  button,.btn{background:var(--acento);color:#0b0d10;border:0;border-radius:8px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer}
+  button.sec{background:#1d2129;color:var(--texto)}
+  input{background:#0b0d10;border:1px solid var(--borde);color:var(--texto);border-radius:8px;padding:8px 10px;font:inherit}
+  .vacio{color:var(--tenue);padding:20px 0}
+  .aviso{color:var(--tenue);font-size:13px}
+  @media (max-width:600px){ nav a{margin-left:10px} .num{font-size:20px} .ocultar-movil{display:none} }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Poly<span>Bot</span><span class="sim">SIMULACIÓN</span></div>
+  <nav>
+    <a href="/" class="{{ 'activo' if pagina=='inicio' }}">Panel</a>
+    <a href="/mercados" class="{{ 'activo' if pagina=='mercados' }}">Mercados</a>
+  </nav>
+</header>
+<main>{% block contenido %}{% endblock %}</main>
+</body>
+</html>

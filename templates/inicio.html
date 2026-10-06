@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block contenido %}
+{% set ganancia = banca - inicial %}
+<div class="grid">
+  <div class="card"><div class="etq">Banca ficticia</div>
+    <div class="num mono">${{ "{:,.2f}".format(banca) }}</div></div>
+  <div class="card"><div class="etq">Ganancia</div>
+    <div class="num mono {{ 'pos' if ganancia >= 0 else 'neg' }}">{{ "{:+,.2f}".format(ganancia) }}</div></div>
+  <div class="card"><div class="etq">Expuesto</div>
+    <div class="num mono">${{ "{:,.0f}".format(expuesto) }}</div></div>
+  <div class="card"><div class="etq">Posiciones abiertas</div>
+    <div class="num mono">{{ abiertas|length }}</div></div>
+</div>
+
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;flex-wrap:wrap">
+  <div class="aviso">
+    {% if corriendo %}⏳ Ciclo corriendo… recarga en un minuto.
+    {% elif ultima %}Último ciclo: <span class="mono">{{ ultima.fecha[:16].replace('T',' ') }} UTC</span> — {{ ultima.resumen }}
+    {% else %}El bot aún no ha corrido.{% endif %}
+  </div>
+  <form method="post" action="/ciclo-ahora"><button>Correr ciclo ahora</button></form>
+</div>
+
+{% if historial|length > 1 %}
+<h2>Evolución de la banca</h2>
+<div class="card"><canvas id="graf" height="110"></canvas></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  const d = {{ historial|tojson }};
+  new Chart(document.getElementById('graf'), {
+    type:'line',
+    data:{labels:d.map(x=>x[0]), datasets:[{data:d.map(x=>x[1]), borderColor:'#7c8cff', backgroundColor:'rgba(124,140,255,.12)', fill:true, tension:.25, pointRadius:0}]},
+    options:{plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#8b919c',maxTicksLimit:6},grid:{color:'#22262e'}}, y:{ticks:{color:'#8b919c'},grid:{color:'#22262e'}}}}
+  });
+</script>
+{% endif %}
+
+<h2>Modelos vs. mercado</h2>
+{% if metricas %}
+<div class="tabla"><table>
+  <tr><th>Modelo</th><th>Ops</th><th>Aciertos</th><th>PnL</th><th>ROI</th><th>Brier modelo</th><th>Brier mercado</th></tr>
+  {% for nombre, r in metricas.items() %}
+  <tr>
+    <td>{{ nombre }}</td><td class="mono">{{ r.n }}</td><td class="mono">{{ r.ganadas }}</td>
+    <td class="mono {{ 'pos' if r.pnl>=0 else 'neg' }}">{{ "{:+,.2f}".format(r.pnl) }}</td>
+    <td class="mono {{ 'pos' if r.roi>=0 else 'neg' }}">{{ "{:+.1%}".format(r.roi) }}</td>
+    <td class="mono {{ 'pos' if r.brier_modelo < r.brier_mercado else 'neg' }}">{{ "%.4f"|format(r.brier_modelo) }}</td>
+    <td class="mono">{{ "%.4f"|format(r.brier_mercado) }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+<p class="aviso">Brier más bajo = mejor calibrado. Si tu modelo no le gana al mercado tras 50+ operaciones, no hay ventaja real.</p>
+{% else %}<div class="vacio">Aún no hay operaciones liquidadas. Los resultados aparecen cuando cierren los mercados.</div>{% endif %}
+
+<h2>Posiciones abiertas</h2>
+{% if abiertas %}
+<div class="tabla"><table>
+  <tr><th>Mercado</th><th>Lado</th><th>Monto</th><th>Precio</th><th class="ocultar-movil">Modelo</th></tr>
+  {% for o in abiertas %}
+  <tr>
+    <td><a class="q" href="{{ o.url }}" target="_blank">{{ o.pregunta }}</a></td>
+    <td><span class="chip {{ o.lado|lower }}">{{ o.lado }}</span></td>
+    <td class="mono">${{ "%.2f"|format(o.monto) }}</td>
+    <td class="mono">{{ "%.2f"|format(o.precio) }}</td>
+    <td class="ocultar-movil">{{ o.modelo }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+{% else %}<div class="vacio">Sin posiciones abiertas. Agrega pronósticos en <a class="q" href="/mercados" style="color:var(--acento)">Mercados</a>.</div>{% endif %}
+
+{% if cerradas %}
+<h2>Últimas cerradas</h2>
+<div class="tabla"><table>
+  <tr><th>Mercado</th><th>Lado</th><th>Resultado</th><th>PnL</th></tr>
+  {% for o in cerradas %}
+  <tr>
+    <td>{{ o.pregunta }}</td>
+    <td><span class="chip {{ o.lado|lower }}">{{ o.lado }}</span></td>
+    <td>{{ o.estado|capitalize }}</td>
+    <td class="mono {{ 'pos' if o.pnl>=0 else 'neg' }}">{{ "{:+,.2f}".format(o.pnl) }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+{% endif %}
+{% endblock %}

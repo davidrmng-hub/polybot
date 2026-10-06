@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block contenido %}
+<form method="get" style="display:flex;gap:8px;margin-bottom:6px">
+  <input name="q" value="{{ q }}" placeholder="Buscar mercado (ej: Colombia, NBA, Bitcoin)" style="flex:1">
+  <button class="sec">Buscar</button>
+</form>
+<p class="aviso">Escribe tu probabilidad de que pase (%). En el próximo ciclo el bot compara con el precio y opera si ve ventaja.</p>
+{% if error %}<div class="card neg">No se pudieron cargar los mercados: {{ error }}</div>{% endif %}
+
+{% for m in mercados %}
+{% set p = prons.get(m.id) %}
+<div class="card" style="margin-top:10px">
+  <a class="q" href="{{ m.url }}" target="_blank" style="font-weight:500">{{ m.pregunta }}</a>
+  <div class="aviso" style="margin-top:4px">
+    Mercado: <span class="mono" style="color:var(--texto)">{{ "%.1f"|format(m.precio_si*100) }}%</span>
+    · Vol <span class="mono">${{ "{:,.0f}".format(m.volumen) }}</span>
+    {% if m.fecha_fin %}· Cierra {{ m.fecha_fin[:10] }}{% endif %}
+  </div>
+  <form method="post" action="/pronostico" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
+    <input type="hidden" name="mercado_id" value="{{ m.id }}">
+    <input type="hidden" name="pregunta" value="{{ m.pregunta }}">
+    <input name="prob" type="number" min="1" max="99" step="1" required style="width:80px"
+           value="{{ (p.prob_si*100)|round|int if p else '' }}" placeholder="%">
+    <input name="nota" value="{{ p.nota if p else '' }}" placeholder="Por qué (opcional)" style="flex:1;min-width:140px">
+    <button>{{ 'Actualizar' if p else 'Guardar' }}</button>
+    {% if p %}<button class="sec" name="borrar" value="1" formnovalidate>Quitar</button>{% endif %}
+  </form>
+</div>
+{% else %}
+<div class="vacio">No hay mercados para mostrar.</div>
+{% endfor %}
+{% endblock %}
