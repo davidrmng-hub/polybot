@@ -43,9 +43,10 @@ def _ciclo_en_fondo():
             return  # ya hay un ciclo corriendo
         try:
             db = cartera.conectar()
-            bot.ciclo(db)
+            print("[ciclo]", bot.ciclo(db).split("\n")[0], flush=True)
             db.close()
         except Exception as e:  # noqa: BLE001
+            print("[ciclo] ERROR:", e, flush=True)
             db = cartera.conectar()
             cartera.log_ejecucion(db, f"ERROR: {e}")
             db.close()
@@ -128,7 +129,13 @@ def ciclo_remoto():
 
 @app.get("/salud")
 def salud():
-    return "ok"
+    """Diagnóstico sin datos sensibles: cuántos mercados se leen y si hay base de datos externa."""
+    import db as _db
+    try:
+        n = len(_mercados())
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": str(e)}, 500
+    return {"ok": True, "mercados_filtrados": n, "postgres": _db.ES_PG}
 
 
 if __name__ == "__main__":
