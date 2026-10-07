@@ -16,6 +16,9 @@ Variables de entorno en Render:
 |---|---|
 | `DATABASE_URL` | connection string de Neon (`postgresql://...`) |
 | `CLAVE` | tu contraseña del dashboard |
+| `ANTHROPIC_API_KEY` | llave de console.anthropic.com (activa la IA) |
+| `MODELO_IA` | opcional, por defecto `claude-haiku-4-5-20251001` |
+| `ANALISIS_POR_CICLO` | opcional, por defecto 3 (12 al día con 4 ciclos) |
 
 Plan gratuito: el servicio se duerme tras 15 min sin visitas y tarda ~1 min en
 despertar. Es normal.
@@ -36,7 +39,8 @@ Sin `DATABASE_URL` usa un archivo local `cartera.db`.
 
 ## Modelos (`modelo.py`)
 - `manual`: tus pronósticos (dashboard o `mis_pronosticos.csv`).
-- `longshot`: línea base que castiga resultados improbables.
+- `ia`: analista con IA (`ia.py`). Busca noticias, estima sin ver el precio y solo
+  opera en simulación si su confianza es media o alta. Sus recomendaciones salen en **Hoy**.
 
 Para agregar uno: clase con `nombre` y `estimar(mercado) -> prob | None`,
 y súmala en `modelos_disponibles()`.
