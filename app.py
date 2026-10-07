@@ -56,7 +56,70 @@ def _ciclo_en_fondo():
 
 
 # ---------- Rutas ----------
+def _recomendaciones(ms):
+    """Cruza el último análisis de la IA con el precio ACTUAL de cada mercado."""
+    from estrategia import kelly
+    db = cartera.conectar()
+    analisis = cartera.ultimos_analisis(db)
+    db.close()
+    por_id = {m.id: m for m in ms}
+    recs = []
+    for mid, a in analisis.items():
+        m = por_id.get(mid)
+        if not m:
+            continue  # ya cerró o salió de los filtros
+        p, precio_si = float(a["prob"]), m.precio_si
+        if p >= precio_si:
+            lado, precio, prob_lado = "SÍ", precio_si, p
+        else:
+            lado, precio, prob_lado = "NO", 1 - precio_si, 1 - p
+        ventaja = prob_lado - precio
+        if ventaja >= 0.08 and a["confianza"] != "baja":
+            nivel = "oportunidad"
+        elif ventaja >= 0.04:
+            nivel = "vigilar"
+        else:
+            nivel = "justo"
+        pct = min(kelly(prob_lado, precio + config.COSTO_EJECUCION) * config.FRACCION_KELLY,
+                  config.MAX_POR_OPERACION)
+        acciones = 10 / precio if precio else 0
+        recs.append(dict(a=a, m=m, lado=lado, precio=precio, prob_lado=prob_lado,
+                         ventaja=ventaja, nivel=nivel, pct_banca=pct,
+                         ejemplo_acciones=acciones, ejemplo_cobro=acciones,
+                         dias=m.dias_para_cierre()))
+    recs.sort(key=lambda r: r["ventaja"], reverse=True)
+    return recs
+
+
 @app.get("/")
+@protegido
+def hoy():
+    error = None
+    try:
+        ms = _mercados()
+    except Exception as e:  # noqa: BLE001
+        ms, error = [], str(e)
+    recs = _recomendaciones(ms)
+    db = cartera.conectar()
+    met = cartera.metricas(db).get("ia")
+    ultima = cartera.ultima_ejecucion(db)
+    db.close()
+    import ia
+    return render_template(
+        "hoy.html", pagina="hoy", error=error, ia_activa=ia.disponible(),
+        oportunidades=[r for r in recs if r["nivel"] == "oportunidad"],
+        vigilar=[r for r in recs if r["nivel"] == "vigilar"],
+        justos=[r for r in recs if r["nivel"] == "justo"],
+        met=met, ultima=ultima, corriendo=_lock.locked())
+
+
+@app.get("/guia")
+@protegido
+def guia():
+    return render_template("guia.html", pagina="guia")
+
+
+@app.get("/simulacion")
 @protegido
 def inicio():
     db = cartera.conectar()
@@ -72,7 +135,7 @@ def inicio():
             "SELECT * FROM operaciones WHERE estado!='ABIERTA' ORDER BY fecha_cierre DESC LIMIT 30").fetchall()],
         ultima=cartera.ultima_ejecucion(db),
         corriendo=_lock.locked(),
-        pagina="inicio",
+        pagina="simulacion",
     )
     db.close()
     return render_template("inicio.html", **ctx)
@@ -115,7 +178,7 @@ def pronostico():
 @protegido
 def ciclo_ahora():
     _ciclo_en_fondo()
-    return redirect(url_for("inicio"))
+    return redirect(request.referrer or url_for("hoy"))
 
 
 @app.get("/ciclo")

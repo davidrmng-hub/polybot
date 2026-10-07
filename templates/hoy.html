@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block contenido %}
+<style>
+  .rec{margin-top:12px}
+  .rec .accion{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:10px 0 6px}
+  .rec .verbo{font-size:20px;font-weight:700}
+  .rec .verbo.si{color:var(--verde)} .rec .verbo.no{color:var(--rojo)}
+  .barra{position:relative;height:8px;background:#1d2129;border-radius:4px;margin:14px 0 4px}
+  .barra .mk{position:absolute;top:-4px;width:3px;height:16px;border-radius:2px}
+  .leyenda{display:flex;justify-content:space-between;font-size:12px;color:var(--tenue)}
+  .ejemplo{background:#0f1216;border:1px dashed var(--borde);border-radius:10px;padding:10px 12px;font-size:13px;margin-top:10px;line-height:1.55}
+  details{margin-top:10px} summary{cursor:pointer;color:var(--acento);font-size:13px}
+  ul{margin:6px 0;padding-left:18px} li{margin:3px 0;font-size:13px}
+  .tag{font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--borde);color:var(--tenue)}
+  .tag.alta{color:var(--verde);border-color:var(--verde)} .tag.media{color:var(--amarillo);border-color:var(--amarillo)}
+  .banner{border-left:3px solid var(--amarillo);padding:10px 14px;background:var(--panel);border-radius:8px;font-size:13px;line-height:1.5}
+  .fila{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--borde);font-size:13px}
+</style>
+
+{% if not ia_activa %}
+<div class="banner">🔌 <b>La IA está apagada.</b> Cuando pegues tu llave <span class="mono">ANTHROPIC_API_KEY</span> en Render,
+  el bot empieza a analizar mercados solo y aquí aparecerán las recomendaciones.</div>
+{% endif %}
+
+<div class="banner" style="margin-top:10px">
+  {% if met and met.n >= 20 %}
+    📊 Historial de la IA: <b>{{ met.n }}</b> predicciones resueltas en simulación,
+    ROI <b class="{{ 'pos' if met.roi>=0 else 'neg' }}">{{ "{:+.1%}".format(met.roi) }}</b>.
+    {% if met.brier_modelo < met.brier_mercado %}Está calibrando <b class="pos">mejor que el mercado</b>.
+    {% else %}Todavía <b class="neg">no le gana al mercado</b>: cuidado con seguirla.{% endif %}
+  {% else %}
+    🧪 La IA lleva <b>{{ met.n if met else 0 }}</b> predicciones resueltas. Hasta tener 20–30 no sabemos si de verdad acierta más que el mercado.
+    Toma esto como <b>experimento</b>: montos pequeños o solo seguimiento.
+  {% endif %}
+</div>
+
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap">
+  <div class="aviso">
+    {% if corriendo %}⏳ Analizando… recarga en 1–2 minutos.
+    {% elif ultima %}Último ciclo: <span class="mono">{{ ultima.fecha[:16].replace('T',' ') }} UTC</span> — {{ ultima.resumen }}
+    {% else %}El bot aún no ha corrido.{% endif %}
+  </div>
+  <form method="post" action="/ciclo-ahora"><button>Analizar ahora</button></form>
+</div>
+{% if error %}<div class="card neg" style="margin-top:10px">No se pudieron cargar los mercados: {{ error }}</div>{% endif %}
+
+<h2>🎯 Oportunidades ({{ oportunidades|length }})</h2>
+<p class="aviso" style="margin-top:-4px">La IA ve al menos 8 puntos de diferencia con el precio y tiene confianza media o alta.</p>
+
+{% macro tarjeta(r) %}
+<div class="card rec">
+  <a class="q" href="{{ r.m.url }}" target="_blank" style="font-weight:600">{{ r.m.pregunta }}</a>
+  <div class="aviso" style="margin-top:4px">
+    {% if r.dias is not none %}Cierra en {{ r.dias|round|int }} días · {% endif %}
+    Vol ${{ "{:,.0f}".format(r.m.volumen) }} · <span class="tag {{ r.a.confianza }}">confianza {{ r.a.confianza }}</span>
+  </div>
+
+  <div class="accion">
+    <span class="verbo {{ 'si' if r.lado=='SÍ' else 'no' }}">{{ 'Comprar' if r.nivel=='oportunidad' else 'Inclina a' }} {{ r.lado }}</span>
+    <span class="mono">a {{ (r.precio*100)|round(1) }}¢</span>
+    <span class="aviso">ventaja <b class="pos mono">+{{ (r.ventaja*100)|round|int }} pts</b></span>
+  </div>
+
+  {% set ps = r.m.precio_si*100 %}{% set ia = r.a.prob*100 %}
+  <div class="barra">
+    <div class="mk" style="left:calc({{ ps }}% - 1px);background:var(--tenue)"></div>
+    <div class="mk" style="left:calc({{ ia }}% - 1px);background:var(--acento)"></div>
+  </div>
+  <div class="leyenda"><span>Probabilidad de que pase «Sí»</span>
+    <span><span style="color:var(--tenue)">▮ mercado {{ ps|round|int }}%</span> · <span style="color:var(--acento)">▮ IA {{ ia|round|int }}%</span></span></div>
+
+  <p style="font-size:14px;line-height:1.5;margin:12px 0 0">{{ r.a.resumen }}</p>
+
+  {% if r.nivel=='oportunidad' %}
+  <div class="ejemplo">
+    <b>Así funciona con $10:</b> compras {{ "%.1f"|format(r.ejemplo_acciones) }} acciones de «{{ r.lado }}» a {{ (r.precio*100)|round(1) }}¢ cada una.<br>
+    ✅ Si el resultado es «{{ r.lado }}» → cobras <b>${{ "%.2f"|format(r.ejemplo_cobro) }}</b> (ganas ${{ "%.2f"|format(r.ejemplo_cobro-10) }}).<br>
+    ❌ Si no → pierdes los $10.<br>
+    📏 Tamaño sugerido: <b>{{ (r.pct_banca*100)|round(1) }}%</b> del dinero que tengas destinado a esto, nunca más.
+  </div>
+  {% endif %}
+
+  <details>
+    <summary>Ver razones y fuentes</summary>
+    {% if r.a.a_favor %}<div class="aviso" style="margin-top:8px">A favor de «Sí»</div><ul>{% for x in r.a.a_favor %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+    {% if r.a.en_contra %}<div class="aviso">En contra de «Sí»</div><ul>{% for x in r.a.en_contra %}<li>{{ x }}</li>{% endfor %}</ul>{% endif %}
+    {% if r.a.que_vigilar %}<div class="aviso">Qué vigilar</div><p style="font-size:13px;margin:4px 0">{{ r.a.que_vigilar }}</p>{% endif %}
+    {% if r.a.fuentes %}<div class="aviso">Fuentes</div><ul>{% for f in r.a.fuentes %}<li><a class="q" style="color:var(--acento)" href="{{ f.url }}" target="_blank">{{ f.titulo[:80] }}</a></li>{% endfor %}</ul>{% endif %}
+    <div class="aviso">Analizado {{ r.a.fecha[:16].replace('T',' ') }} UTC, cuando el precio era {{ (r.a.precio_al_analizar*100)|round|int }}%.</div>
+  </details>
+</div>
+{% endmacro %}
+
+{% for r in oportunidades %}{{ tarjeta(r) }}{% else %}
+<div class="vacio">Ninguna por ahora. Es normal: en la mayoría de mercados el precio ya es justo. Lo importante es no forzar operaciones.</div>
+{% endfor %}
+
+{% if vigilar %}
+<h2>👀 Para vigilar ({{ vigilar|length }})</h2>
+<p class="aviso" style="margin-top:-4px">Diferencia pequeña o confianza baja. No es momento de entrar, pero pueden moverse.</p>
+{% for r in vigilar %}{{ tarjeta(r) }}{% endfor %}
+{% endif %}
+
+{% if justos %}
+<h2>⚖️ Precio justo ({{ justos|length }})</h2>
+<div class="card">
+{% for r in justos %}
+  <div class="fila"><a class="q" href="{{ r.m.url }}" target="_blank">{{ r.m.pregunta }}</a>
+    <span class="mono" style="white-space:nowrap">IA {{ (r.a.prob*100)|round|int }}% · mkt {{ (r.m.precio_si*100)|round|int }}%</span></div>
+{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

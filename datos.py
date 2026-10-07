@@ -1,5 +1,6 @@
 """Lectura de mercados públicos de Polymarket (solo lectura, sin cuenta)."""
 import json
+from datetime import datetime, timezone
 from dataclasses import dataclass
 from typing import Optional
 
@@ -19,6 +20,16 @@ class Mercado:
     fecha_fin: str
     cerrado: bool
     categoria: str = ""
+    descripcion: str = ""
+
+    def dias_para_cierre(self) -> Optional[float]:
+        if not self.fecha_fin:
+            return None
+        try:
+            fin = datetime.fromisoformat(self.fecha_fin.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        return (fin - datetime.now(timezone.utc)).total_seconds() / 86400
 
     @property
     def url(self) -> str:
@@ -34,7 +45,10 @@ def _parse(m: dict) -> Optional[Mercado]:
     # Solo mercados binarios Sí/No
     if len(outcomes) != 2 or len(precios) != 2:
         return None
-    idx_si = 0 if str(outcomes[0]).lower() in ("yes", "sí", "si") else 1
+    nombres = [str(o).strip().lower() for o in outcomes]
+    if sorted(nombres) != ["no", "yes"]:   # solo mercados Sí/No
+        return None
+    idx_si = nombres.index("yes")
     return Mercado(
         id=str(m.get("id")),
         pregunta=m.get("question", ""),
@@ -45,6 +59,7 @@ def _parse(m: dict) -> Optional[Mercado]:
         fecha_fin=m.get("endDate", "") or "",
         cerrado=bool(m.get("closed")),
         categoria=m.get("category", "") or "",
+        descripcion=(m.get("description") or "")[:2500],
     )
 
 

@@ -1,4 +1,5 @@
 """Cartera simulada: registra operaciones, las liquida y mide resultados."""
+import json
 from datetime import datetime, timezone
 
 import config
@@ -62,6 +63,32 @@ def borrar_pronostico(db, mercado_id: str):
 
 def pronosticos(db) -> dict[str, dict]:
     return {f["mercado_id"]: dict(f) for f in db.execute("SELECT * FROM pronosticos").fetchall()}
+
+
+def guardar_analisis(db, m, d: dict, modelo_ia: str):
+    db.execute(
+        """INSERT INTO analisis (mercado_id, fecha, pregunta, url, fecha_fin, precio_al_analizar,
+           prob, confianza, resumen, a_favor, en_contra, que_vigilar, fuentes, modelo_ia)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        (m.id, _ahora(), m.pregunta, m.url, m.fecha_fin, m.precio_si, d["probabilidad"],
+         d["confianza"], d.get("resumen", ""), json.dumps(d.get("a_favor", []), ensure_ascii=False),
+         json.dumps(d.get("en_contra", []), ensure_ascii=False), d.get("que_vigilar", ""),
+         json.dumps(d.get("fuentes", []), ensure_ascii=False), modelo_ia))
+    db.commit()
+
+
+def ultimos_analisis(db) -> dict[str, dict]:
+    """El análisis más reciente de cada mercado."""
+    res = {}
+    for f in db.execute("SELECT * FROM analisis ORDER BY id").fetchall():
+        d = dict(f)
+        for k in ("a_favor", "en_contra", "fuentes"):
+            try:
+                d[k] = json.loads(d[k] or "[]")
+            except ValueError:
+                d[k] = []
+        res[d["mercado_id"]] = d
+    return res
 
 
 def log_ejecucion(db, resumen: str):

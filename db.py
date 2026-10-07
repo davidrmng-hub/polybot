@@ -22,6 +22,11 @@ CREATE TABLE IF NOT EXISTS pronosticos (
     mercado_id TEXT PRIMARY KEY,
     prob_si REAL, nota TEXT, pregunta TEXT, fecha TEXT
 );
+CREATE TABLE IF NOT EXISTS analisis (
+    id {pk}, mercado_id TEXT, fecha TEXT, pregunta TEXT, url TEXT, fecha_fin TEXT,
+    precio_al_analizar REAL, prob REAL, confianza TEXT, resumen TEXT,
+    a_favor TEXT, en_contra TEXT, que_vigilar TEXT, fuentes TEXT, modelo_ia TEXT
+);
 CREATE TABLE IF NOT EXISTS ejecuciones (
     id {pk}, fecha TEXT, resumen TEXT
 );

@@ -17,8 +17,8 @@ from estrategia import evaluar
 from modelo import modelos_disponibles
 
 
-def operar(db) -> list[str]:
-    ms = datos.filtrar(datos.mercados_activos())
+def operar(db, ms=None) -> list[str]:
+    ms = ms if ms is not None else datos.filtrar(datos.mercados_activos())
     lineas = []
     for modelo in modelos_disponibles(db):
         for m in ms:
@@ -48,12 +48,18 @@ def resolver(db) -> int:
     return cerradas
 
 
-def ciclo(db) -> str:
-    nuevas = operar(db)
+def ciclo(db, cliente_ia=None) -> str:
+    import ia
+    ms = datos.filtrar(datos.mercados_activos())
+    analisis = ia.correr(db, ms, cliente_ia)
+    n_ia = sum(1 for x in analisis if x.startswith("IA:"))
+    nuevas = operar(db, ms)
     cerradas = resolver(db)
-    resumen = f"{len(nuevas)} operaciones nuevas, {cerradas} liquidadas"
+    resumen = f"{n_ia} análisis IA, {len(nuevas)} operaciones simuladas nuevas, {cerradas} liquidadas"
+    if analisis and analisis[0].startswith("IA desactivada"):
+        resumen += " (IA desactivada: falta la llave)"
     cartera.log_ejecucion(db, resumen)
-    return resumen + ("\n" + "\n".join(nuevas) if nuevas else "")
+    return "\n".join([resumen] + analisis + nuevas)
 
 
 # ---------- Comandos de terminal ----------

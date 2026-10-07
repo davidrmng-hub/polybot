@@ -18,7 +18,8 @@
   .logo{font-weight:700;letter-spacing:.5px}
   .logo span{color:var(--acento)}
   .sim{font-size:11px;color:var(--amarillo);border:1px solid var(--amarillo);border-radius:20px;padding:2px 8px;margin-left:8px}
-  nav a{color:var(--tenue);text-decoration:none;margin-left:14px;font-size:14px}
+  nav{display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-end}
+  nav a{color:var(--tenue);text-decoration:none;font-size:14px}
   nav a.activo{color:var(--texto)}
   main{max-width:1000px;margin:0 auto;padding:16px}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
@@ -39,15 +40,17 @@
   input{background:#0b0d10;border:1px solid var(--borde);color:var(--texto);border-radius:8px;padding:8px 10px;font:inherit}
   .vacio{color:var(--tenue);padding:20px 0}
   .aviso{color:var(--tenue);font-size:13px}
-  @media (max-width:600px){ nav a{margin-left:10px} .num{font-size:20px} .ocultar-movil{display:none} }
+  @media (max-width:600px){ nav{gap:10px} nav a{font-size:13px} .sim{display:none} .num{font-size:20px} .ocultar-movil{display:none} }
 </style>
 </head>
 <body>
 <header>
   <div class="logo">Poly<span>Bot</span><span class="sim">SIMULACIÓN</span></div>
   <nav>
-    <a href="/" class="{{ 'activo' if pagina=='inicio' }}">Panel</a>
+    <a href="/" class="{{ 'activo' if pagina=='hoy' }}">Hoy</a>
+    <a href="/simulacion" class="{{ 'activo' if pagina=='simulacion' }}">Simulación</a>
     <a href="/mercados" class="{{ 'activo' if pagina=='mercados' }}">Mercados</a>
+    <a href="/guia" class="{{ 'activo' if pagina=='guia' }}">Guía</a>
   </nav>
 </header>
 <main>{% block contenido %}{% endblock %}</main>

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block contenido %}
+<style>
+  .g h2{margin-top:28px} .g p,.g li{line-height:1.6;font-size:14px} .g li{margin:4px 0}
+  .caja{background:#0f1216;border:1px dashed var(--borde);border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.6;margin:10px 0}
+</style>
+<div class="g">
+<h2 style="margin-top:6px">1. Qué es Polymarket</h2>
+<p>Un <b>mercado de predicciones</b>: la gente compra y vende acciones sobre si algo va a pasar o no
+(«¿Gana X las elecciones?», «¿Bitcoin pasa de 150k en diciembre?»). No apuestas contra la casa,
+sino contra otras personas que piensan distinto.</p>
+
+<h2>2. El precio es una probabilidad</h2>
+<p>Cada acción vale entre <b>0¢ y 100¢</b>. Si el resultado ocurre, cada acción de «Sí» paga <b>$1</b>; si no, paga $0.
+Por eso el precio se lee como probabilidad: «Sí» a 30¢ significa que el mercado cree que hay ~30% de chance.</p>
+<div class="caja">Compras 10 acciones de «Sí» a 30¢ = pagas $3.<br>
+✅ Si pasa → recibes $10 (ganas $7).<br>❌ Si no pasa → pierdes $3.<br>
+«Sí» + «No» siempre suman ~100¢.</div>
+
+<h2>3. Dónde está la ganancia: la ventaja</h2>
+<p>Solo ganas a largo plazo si <b>sabes algo que el precio no refleja</b>. Si crees que la probabilidad real es 45%
+y el mercado la vende a 30¢, tienes <b>15 puntos de ventaja</b>. Eso es lo que busca el bot.</p>
+<div class="caja"><b>Valor esperado</b> = (tu probabilidad × lo que ganas) − (prob. de perder × lo que pierdes).<br>
+Con 45% y precio 30¢: 0,45 × $0,70 − 0,55 × $0,30 = <b>+$0,15 por acción</b>.<br>
+Aun con ventaja, vas a perder muchas operaciones individuales. La ganancia aparece en el promedio de muchas.</div>
+
+<h2>4. No tienes que esperar al final</h2>
+<p>Puedes <b>vender antes</b> de que se resuelva. Si compraste a 30¢ y por una noticia sube a 50¢, vendes y ganas 20¢
+por acción sin esperar el resultado.</p>
+
+<h2>5. Riesgos reales</h2>
+<ul>
+  <li><b>Liquidez:</b> en mercados pequeños hay pocos compradores; el precio que ves no siempre es el que consigues (spread).</li>
+  <li><b>Reglas de resolución:</b> lee siempre cómo se decide el resultado; hay mercados que se resuelven por tecnicismos.</li>
+  <li><b>Información:</b> en política y deportes grandes compite gente muy informada; la ventaja es más fácil en nichos que conoces.</li>
+  <li><b>Tamaño:</b> nunca más del 2–5% de tu banca en una sola posición. El bot ya lo calcula por ti.</li>
+</ul>
+
+<h2>6. Cómo funciona este bot</h2>
+<ul>
+  <li><b>Hoy:</b> la IA lee noticias de los mercados que cierran pronto, estima su propia probabilidad <i>sin ver el precio</i> y la compara. Si hay diferencia grande, te dice qué comprar y por qué.</li>
+  <li><b>Simulación:</b> el bot «compra» con dinero ficticio cada recomendación y la liquida cuando el mercado cierra. Es el historial que dice si la IA sirve o no.</li>
+  <li><b>Mercados:</b> tú también puedes poner tus propias probabilidades; el bot las prueba igual.</li>
+  <li><b>Brier score:</b> mide qué tan bien calibrado está un pronóstico (más bajo = mejor). Si la IA no le gana al mercado tras 30+ resultados, no tiene ventaja.</li>
+</ul>
+</div>
+{% endblock %}
